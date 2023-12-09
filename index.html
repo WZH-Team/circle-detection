@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>画圆，检测！</title>
+  <style>
+    canvas {
+      border: 2px solid #000;
+      display: block;
+      margin: 20px auto;
+    }
+    #percentage {
+      text-align: center;
+      font-size: 24px;
+    }
+    .copyright {
+      opacity: 0.8;
+      font-size: 10px;
+      text-align: center;
+      position: absolute;
+      top: 80%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      }
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="400"></canvas>
+  <div id="percentage">圆度: 0%</div>
+  <div class="copyright">&copy; WZH团队</div>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let userCircle = [];
+
+    // 清除画布
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // 绘制用户笔迹（渐变）
+    function drawUserStroke() {
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, 'blue');
+      gradient.addColorStop(1, 'red');
+      ctx.strokeStyle = gradient;
+
+      ctx.beginPath();
+
+      for (let i = 0; i < userCircle.length - 1; i++) {
+        ctx.moveTo(userCircle[i].x, userCircle[i].y);
+        ctx.lineTo(userCircle[i + 1].x, userCircle[i + 1].y);
+      }
+
+      ctx.stroke();
+    }
+
+    // 计算圆度百分比
+    function calculateCircularity() {
+      const radius = 150;
+      const center = { x: canvas.width / 2, y: canvas.height / 2 };
+      const circleBox = { // 圆形边界框
+        x: center.x - radius,
+        y: center.y - radius,
+        width: radius * 2,
+        height: radius * 2
+      };
+
+      const userBoundingBox = calculateBoundingBox(userCircle); // 用户绘制图形的边界框
+      const similarityPercentage = calculateSimilarity(circleBox, userBoundingBox);
+
+      document.getElementById('percentage').innerText = `相似度: ${similarityPercentage.toFixed(2)}%`;
+
+      return similarityPercentage.toFixed(2);
+    }
+
+    // 计算多边形的边界框
+    function calculateBoundingBox(points) {
+      let minX = points[0].x;
+      let minY = points[0].y;
+      let maxX = points[0].x;
+      let maxY = points[0].y;
+
+      for (let i = 1; i < points.length; i++) {
+        const { x, y } = points[i];
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+
+      return {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+      };
+    }
+
+    // 计算边界框的相似度
+    function calculateSimilarity(boxA, boxB) {
+      const intersectionX = Math.max(0, Math.min(boxA.x + boxA.width, boxB.x + boxB.width) - Math.max(boxA.x, boxB.x));
+      const intersectionY = Math.max(0, Math.min(boxA.y + boxA.height, boxB.y + boxB.height) - Math.max(boxA.y, boxB.y));
+      const intersectionArea = intersectionX * intersectionY;
+
+      const areaA = boxA.width * boxA.height;
+      const areaB = boxB.width * boxB.height;
+      const totalArea = areaA + areaB - intersectionArea;
+
+      return (intersectionArea / totalArea) * 100;
+    }
+
+    // 开始绘制
+    canvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      userCircle = []; // 清空笔迹
+      clearCanvas(); // 清除画布
+    });
+
+    // 绘制过程中
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDrawing) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        userCircle.push({ x: mouseX, y: mouseY });
+
+        clearCanvas();
+        drawUserStroke();
+
+        calculateCircularity();
+      }
+    });
+
+    // 绘制结束
+    canvas.addEventListener('mouseup', () => {
+      isDrawing = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      if (isDrawing) {
+        isDrawing = false;
+        clearCanvas();
+        document.getElementById('percentage').innerText = `圆度: 0%`;
+      }
+    });
+  </script>
+</body>
+</html>
