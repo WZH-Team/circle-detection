@@ -4,28 +4,39 @@
   <meta charset="UTF-8">
   <title>画圆，检测！</title>
   <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* 隐藏滚动条 */
+    }
     canvas {
-      border: 2px solid #000;
+      border: none;
       display: block;
-      margin: 20px auto;
+      margin: 0 auto;
+      width: 100vw; 
+      height: 100vh; 
     }
     #percentage {
       text-align: center;
       font-size: 24px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
     .copyright {
       opacity: 0.8;
       font-size: 10px;
       text-align: center;
       position: absolute;
-      top: 80%;
+      bottom: 10px;
       left: 50%;
-      transform: translate(-50%, -50%);
-      }
+      transform: translateX(-50%);
+    }
   </style>
 </head>
 <body>
-  <canvas id="myCanvas" width="400" height="400"></canvas>
+  <canvas id="myCanvas"></canvas>
   <div id="percentage">圆度: 0%</div>
   <div class="copyright">&copy; WZH团队</div>
 
@@ -34,6 +45,12 @@
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let userCircle = [];
+
+    // 调整画布大小以适应视口
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
 
     // 清除画布
     function clearCanvas() {
@@ -59,7 +76,7 @@
 
     // 计算圆度百分比
     function calculateCircularity() {
-      const radius = 150;
+      const radius = Math.min(canvas.width, canvas.height) / 3;
       const center = { x: canvas.width / 2, y: canvas.height / 2 };
       const circleBox = { // 圆形边界框
         x: center.x - radius,
@@ -122,9 +139,8 @@
     // 绘制过程中
     canvas.addEventListener('mousemove', (e) => {
       if (isDrawing) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
         userCircle.push({ x: mouseX, y: mouseY });
 
         clearCanvas();
@@ -146,6 +162,43 @@
         document.getElementById('percentage').innerText = `圆度: 0%`;
       }
     });
+
+    // 移动设备支持
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseX = touch.clientX;
+      const mouseY = touch.clientY;
+      userCircle.push({ x: mouseX, y: mouseY });
+
+      clearCanvas();
+      drawUserStroke();
+
+      calculateCircularity();
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseX = touch.clientX;
+      const mouseY = touch.clientY;
+      userCircle.push({ x: mouseX, y: mouseY });
+
+      clearCanvas();
+      drawUserStroke();
+
+      calculateCircularity();
+    });
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      clearCanvas();
+      drawUserStroke();
+      calculateCircularity();
+    });
+
+    // 初始化画布大小
+    resizeCanvas();
   </script>
 </body>
 </html>
